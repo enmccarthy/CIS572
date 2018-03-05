@@ -23,7 +23,7 @@ def entropy(p):
 	
 	# For now, always return "0":
 	#need to check is 0 or 1
-	if p ==1 or p==0:
+	if p == 0 or p ==1:
 		return 0
 	ent = -p*(math.log(p, 2)) - (1-p)*(math.log((1-p), 2))
 	return ent;
@@ -36,7 +36,6 @@ def entropy(p):
 # total : total length of the data
 def infogain(py_pxi, pxi, py, total):
 	#Gain(S,a) = Entropy(S) - Sum in A of S1/S Entropy S1
-	# For now, always return "0":
 	if pxi == 0:
 		XYPOS = 0
 	else:
@@ -77,65 +76,81 @@ def print_model(root, modelfile):
 
 # Build tree in a top-down manner, selecting splits until we hit a
 # pure leaf or all splits look bad.
-def build_tree(data, varnames):
+
+def count_var(data):
 	count = 0
-	listofVarNum = [0]*(len(varnames))
-	numPos = [0]*(len(varnames))
-	listofVarGain = [0]*(len(varnames))
-	totalPosY = 0
+	#How many of the X's are pos
+	listofVarNum = [0]*(len(data[1]))
+	#XandY POS
+	numPos = [0]*(len(data[1]))
+	#the gain for that variable  
 	for dataRow in data:
-		#as long as it is not the classification
-		totalPosY += dataRow[-1]
 		for entry in dataRow:
 			listofVarNum[count] += entry
 			if entry: 
 				numPos[count] += dataRow[-1]
 			count += 1
 		count = 0
-	for val in listofVarNum:
-		ind = listofVarNum.index(val)
-		if ind != len(listofVarNum)-1:
-			newVal = infogain(numPos[ind], listofVarNum[ind], totalPosY, len(data))
-			listofVarGain[ind] = newVal
-		else:
-			listofVarGain[ind] = 0
+	return zip(listofVarNum, numPos)
+
+def count_Y(data):
+	countY = 0
+	for dataRow in data:
+		countY += dataRow[-1]
+	return countY
+
+def build_tree(data, varnames):
+	localdata = data[:]
+	localVarNames = varnames[:]
+	XPosYPos = count_var(localdata)
+	totalPosY = count_Y(localdata)
+	total = len(localdata)
 	
+	listofVarGain = [0]*(len(localVarNames)-1)
+
+	ind = 0
+	for (XVal, YVal) in XPosYPos:
+		#super inefficient maybe change this
+		
+		if ind != len(XPosYPos)-1:
+			listofVarGain[ind] = infogain(YVal,XVal, totalPosY, total)
+			ind += 1 
 	indextoremove = listofVarGain.index(max(listofVarGain))
+
+	if max(listofVarGain) == 0:
+		if YVal >= (totalPosY-YVal):
+			return node.Split(localVarNames, indextoremove, node.Leaf(localVarNames, 1), node.Leaf(localVarNames, 0))
+		else:
+			return node.Split(localVarNames, indextoremove, node.Leaf(localVarNames, 0), node.Leaf(localVarNames, 1))
+	#split data
 	leftData = []
 	rightData = []
 	countRight = 0
 	countLeft = 0
-	oldvarnames = varnames[:]	
-	oldvarnames.pop(indextoremove)
-	diffdata = data[:] 
-	for datarow in diffdata:
+	newVarNames = localVarNames[:]
+	 
+	for datarow in localdata:
 		if datarow[indextoremove] == 0:
 			countLeft += datarow[-1]
-			del(datarow[indextoremove])
 			leftData.append(datarow)
-			print leftData
 		else:
 			countRight += datarow[-1]
-			del(datarow[indextoremove])
 			rightData.append(datarow)
-			print rightData
-	if max(listofVarGain) == 0:
-		return node.Split(varnames, indextoremove, node.Leaf(oldvarnames, 0), node.Leaf(oldvarnames, 1))
 
-	if countRight == 0 and countLeft == len(leftData): 
-		return node.Split(varnames, indextoremove, node.Leaf(oldvarnames, 1), node.Leaf(oldvarnames, 0))
+	if countRight == 0 and countLeft == len(leftData):
+		return node.Split(localVarNames, indextoremove, node.Leaf(localVarNames, 1), node.Leaf(localVarNames, 0))
 	elif countRight == len(rightData) and countLeft == 0:
-		return node.Split(varnames, indextoremove, node.Leaf(oldvarnames, 0), node.Leaf(oldvarnames, 1))
+		return node.Split(localVarNames, indextoremove, node.Leaf(localVarNames, 0), node.Leaf(localVarNames, 1))
 	elif countRight == 0:
-		return node.Split(varnames, indextoremove, (build_tree(leftData, oldvarnames)), node.Leaf(oldvarnames, 0))
+		return node.Split(localVarNames, indextoremove, (build_tree(leftData, newVarNames)), node.Leaf(localVarNames, 0))
 	elif countRight == len(rightData):
-		return node.Split(varnames, indextoremove, (build_tree(leftData, oldvarnames)), node.Leaf(oldvarnames, 1))
+		return node.Split(localVarNames, indextoremove, (build_tree(leftData, newVarNames)), node.Leaf(localVarNames, 1))
 	elif countLeft == 0:
-		return node.Split(varnames, indextoremove, node.Leaf(oldvarnames, 0), (build_tree(rightData, oldvarnames)))
+		return node.Split(localVarNames, indextoremove, node.Leaf(localVarNames, 0), (build_tree(rightData, newVarNames)))
 	elif countLeft == len(leftData):
-		return node.Split(varnames, indextoremove, node.Leaf(oldvarnames, 1), (build_tree(rightData, oldvarnames)))
+		return node.Split(localVarNames, indextoremove, node.Leaf(localVarNames, 1), (build_tree(rightData, newVarNames)))
 	else:	
-		return node.Split(varnames, indextoremove, (build_tree(leftData, oldvarnames)), (build_tree(rightData, oldvarnames)))
+		return node.Split(localVarNames, indextoremove, (build_tree(leftData, newVarNames)), (build_tree(rightData, newVarNames)))
 
 
 
