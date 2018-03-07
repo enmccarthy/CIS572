@@ -67,12 +67,26 @@ ldf.columns = gen_col
 # vertically concatenate
 wl_df = pd.concat([wdf,ldf], axis=0, ignore_index=True)
 
-#print(wl_df.head())
-#print(wl_df.to_string())
-grouped = wl_df.groupby(["Season", "TeamID"], as_index = False).drop(['DayNum'])expanding().mean(axis=2).reset_index(0,drop=True)
-groupAvg = pd.DataFrame(grouped)
-groupAvg = groupAv
-print(groupAvg[(groupAvg.TeamID == 1104)])
+# needDaysPlz = wl_df.groupby(["Season", "TeamID"], as_index=False).count()
+
+# needDays = pd.DataFrame(needDaysPlz)
+
+# needDays = needDays['DayNum']
+
+# wdl_df = wl_df.drop('DayNum', axis=1)
+grouped = wl_df.groupby(["Season", "TeamID"], as_index = False)
+groupedMean = grouped[['Score', 'FGM', 'FGA', 'FGM3', 'FGA3', 'FTM', 'FTA', 'OR', 'DR', 'Ast', 'TO', 'Stl', 'Blk', 'PF', "ScoredON"]].expanding().mean().reset_index(0,drop=True)
+print(groupedMean.head())
+print(grouped.head())
+groupDates = pd.DataFrame(grouped.count())
+groupDates = groupDates.drop(['Score', 'FGM', 'FGA', 'FGM3', 'FGA3', 'FTM', 'FTA', 'OR', 'DR', 'Ast', 'TO', 'Stl', 'Blk', 'PF', "ScoredON"])
+groupAvg = pd.DataFrame(groupedMean)
+groupAvg = pd.concat([groupDates, groupAvg], axis=1)
+
+
+#print(wl_df.groupby(["Season", "TeamID"], as_index=False)['DayNum'])
+# groupAvg = pd.concat([groupAvg, needDays], axis=1)
+# print(groupAvg[(groupAvg.TeamID == 1104)])
 #avg_stats = grouped.expanding.mean()
 #avg_stats = pd.DataFrame(avg_stats) # convert back into a dataframe
 #print(avg_stats.head())
