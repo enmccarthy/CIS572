@@ -72,37 +72,14 @@ wl_df = pd.concat([wdf,ldf], axis=0, ignore_index=True)
 # needDays = pd.DataFrame(needDaysPlz)
 
 # needDays = needDays['DayNum']
-#print(wl_df.head())
-# wdl_df = wl_df.drop('DayNum', axis=1)
-grouped = wl_df.groupby(["Season", "TeamID"], as_index = False)
-print("SHOULD BE GROUPED")
-print(grouped.head())
-groupedMean = grouped.agg({'Score': "expanding_mean",
-                           'FGM': "expanding_mean" ,
-                           'FGA': "expanding_mean", 
-                           'FGM3': "expanding_mean",
-                           'FGA3': "expanding_mean",
-                           'FTM': .expanding().mean(),
-                           'FTA': .expanding().mean(), 
-                           'OR': .expanding().mean(), 
-                           'DR': .expanding().mean(),
-                           'Ast': .expanding().mean(),
-                           'TO': .expanding().mean(), 
-                           'Stl': .expanding().mean(), 
-                           'Blk': .expanding().mean(), 
-                           'PF': .expanding().mean(), 
-                           "ScoredON".expanding().mean()}).reset_index(0,drop=True)
-print("SHOULD BE MEAN")
-print(groupedMean.head())
-print("IS THIS STILL GROUPED")
-print(grouped.head())
-groupDates = pd.DataFrame(grouped.count())
-groupDates = groupDates.drop(['Score', 'FGM', 'FGA', 'FGM3', 'FGA3', 'FTM', 'FTA', 'OR', 'DR', 'Ast', 'TO', 'Stl', 'Blk', 'PF', "ScoredON"], axis=1)
-groupAvg = pd.DataFrame(groupedMean)
-#print(groupAvg.head())
-groupAvg = pd.concat([groupDates, groupAvg], axis=1)
 
-print(groupAvg[(groupAvg.Season == 2003.0) & (groupAvg.DayNum == 10.0) & (groupAvg.TeamID == 1104)])
+# wdl_df = wl_df.drop('DayNum', axis=1)
+grouped = wl_df.groupby(["Season", "TeamID"], as_index = False).expanding().mean().reset_index(0,drop=True)
+groupedMean = grouped.expanding().mean().reset_index(0,drop=True)
+#groupDate = pd.DataFrame(grouped)
+groupAvg = pd.DataFrame(groupedMean)
+print(groupAvg.head())
+print(wl_df.head())
 
 #print(wl_df.groupby(["Season", "TeamID"], as_index=False)['DayNum'])
 # groupAvg = pd.concat([groupAvg, needDays], axis=1)
