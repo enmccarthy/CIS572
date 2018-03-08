@@ -1,23 +1,6 @@
 # Read and process March Madness data for consumption by SciKit-Learn
 
 '''
-NOTES:
-   Most useful categories from adeshpande's model: (in order most to least)
-   wins
-   strength of schedule
-   location
-   SRS simple rating system (??)
-   SPG average steals per game
-   APG average assists per game
-   TOP average turnovers per game
-   RPG average rebounds per game
-   3PG average 3's per game
-   Tourney appearances
-   PPG points per game scored
-   PPGA points per game allowed
-   Powerconf
-   
-  
 KAGGLE COLUMNS - detailed results file
 Season, DayNum, WTeamID, WScore, LTeamID, LScore, WLoc, and NumOT
 WFGM - field goals made (by the winning team)
@@ -32,7 +15,7 @@ WAst - assists (by the winning team)
 WTO - turnovers committed (by the winning team)
 WStl - steals (accomplished by the winning team)
 WBlk - blocks (accomplished by the winning team)
-WPF - personal fouls committed (by the winning team) 
+WPF - personal fouls committed (by the winning team)
 
 additional features?
 - total average score per game
@@ -55,6 +38,7 @@ all_col = ['Season', 'DayNum', 'WTeamID', 'WScore', 'LTeamID', 'LScore', 'WLoc',
 winner_col = ['Season', 'DayNum', 'WTeamID', 'WScore', 'WFGM', 'WFGA', 'WFGM3', 'WFGA3', 'WFTM', 'WFTA', 'WOR', 'WDR', 'WAst', 'WTO', 'WStl', 'WBlk', 'WPF']
 loser_col = ['Season','DayNum', 'LTeamID', 'LScore', 'LFGM', 'LFGA', 'LFGM3', 'LFGA3', 'LFTM', 'LFTA', 'LOR', 'LDR', 'LAst', 'LTO', 'LStl', 'LBlk', 'LPF']
 gen_col = ['Season', 'DayNum', 'TeamID', 'Score', 'FGM', 'FGA', 'FGM3', 'FGA3', 'FTM', 'FTA', 'OR', 'DR', 'Ast', 'TO', 'Stl', 'Blk', 'PF', "ScoredON"]
+modify = ['Score', 'FGM', 'FGA', 'FGM3', 'FGA3', 'FTM', 'FTA', 'OR', 'DR', 'Ast', 'TO', 'Stl', 'Blk', 'PF', "ScoredON"]
 wdf = df[winner_col]
 ldf = df[loser_col]
 
@@ -62,31 +46,14 @@ ldf = df[loser_col]
 wdf = pd.concat([wdf, df["LScore"]], axis=1)
 ldf = pd.concat([ldf, df["WScore"]], axis=1)
 # assign identical column names to each dataframe
-wdf.columns = gen_col 
-ldf.columns = gen_col 
+wdf.columns = gen_col
+ldf.columns = gen_col
 # vertically concatenate
 wl_df = pd.concat([wdf,ldf], axis=0, ignore_index=True)
 
-# needDaysPlz = wl_df.groupby(["Season", "TeamID"], as_index=False).count()
 
-# needDays = pd.DataFrame(needDaysPlz)
+wl_df[modify] = wl_df.groupby(["Season", "TeamID"], as_index = False)[modify].expanding().mean().reset_index(0, drop=True)
 
-# needDays = needDays['DayNum']
-
-# wdl_df = wl_df.drop('DayNum', axis=1)
-grouped = wl_df.groupby(["Season", "TeamID"], as_index = False).expanding().mean().reset_index(0,drop=True)
-groupedMean = grouped.expanding().mean().reset_index(0,drop=True)
-#groupDate = pd.DataFrame(grouped)
-groupAvg = pd.DataFrame(groupedMean)
-print(groupAvg.head())
-print(wl_df.head())
-
-#print(wl_df.groupby(["Season", "TeamID"], as_index=False)['DayNum'])
-# groupAvg = pd.concat([groupAvg, needDays], axis=1)
-# print(groupAvg[(groupAvg.TeamID == 1104)])
-#avg_stats = grouped.expanding.mean()
-#avg_stats = pd.DataFrame(avg_stats) # convert back into a dataframe
-#print(avg_stats.head())
 
 def createTablePerSeason(allData, teamID, season, currDay):
     newTable = allData[(allData.LTeamID == teamID) | (allData.WTeamID == teamID)]
@@ -98,7 +65,6 @@ def createTablePerDay(data, day):
 
 def getdataPoints(avgTable, allData):
     dataPoints = []
-    #print(avgTable.to_string())
     for entry in allData.itertuples(index=False, name=None):
         season = entry[0]
         dayPlayed = entry[1]
@@ -109,34 +75,17 @@ def getdataPoints(avgTable, allData):
         wAvg = avgTable[(avgTable.Season == season) & (avgTable.TeamID == wT) & (avgTable.DayNum == dayPlayed)]
         lAvg = avgTable[(avgTable.Season == season) & (avgTable.TeamID == lT) & (avgTable.DayNum == dayPlayed)]
         num = random.randrange(0, 100)/100.00
+        print(wAvg)
         if num <= .50:
             ans = lAvg.values-wAvg.values
-            print("HERE")
-            print(ans)
             #lol janky
             dataPoints.append(([season, dayPlayed, lT]+ ans[0].tolist()[3:], lScore-wScore))
-            
+
         else:
             ans = wAvg.values-lAvg.values
-            print("HERE")
-            print(ans)
             dataPoints.append(([season, dayPlayed, wT]+ ans[0].tolist()[3:], wScore-lScore))
     return dataPoints
 
 # GENERATE TRAINING DATA from GAME data
 
-print(getdataPoints(groupAvg, df))
-
-
-# location = "./DataFiles/"
-
-# teamFileName = "Teams.csv"
-# teamDF = pd.read_csv(location + teamFileName)
-
-# seasonResultsName = "RegularSeasonDetailedResults.csv"
-# seasonsDF = pd.read_csv(location + seasonResultsName)
-
-# tourneySeedsName = "NCAATourneySeeds.csv"
-# tourneySeedsDF = pd.read_csv(location + tourneySeedsName)
-
-#mergedDF = teamDF.merge(tourneySeedsDF, on="TeamID")
+print(getdataPoints(wl_df, df))
