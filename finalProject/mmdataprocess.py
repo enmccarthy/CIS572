@@ -78,15 +78,15 @@ def getdataPoints(avgTable, allData):
         if num <= .50:
             ans = lAvg.values-wAvg.values
             #lol janky
-            dataPoints.append(([season, dayPlayed, lT]+ ans[0].tolist()[3:], lScore-wScore))
+            dataPoints.append(([season, dayPlayed, lT, wT]+ ans[0].tolist()[3:], lScore-wScore))
 
         else:
             ans = wAvg.values-lAvg.values
-            dataPoints.append(([season, dayPlayed, wT]+ ans[0].tolist()[3:], wScore-lScore))
+            dataPoints.append(([season, dayPlayed, wT, lT]+ ans[0].tolist()[3:], wScore-lScore))
     return dataPoints
 datap = getdataPoints(wl_df, df)
 # GENERATE TRAINING DATA from GAME data
 global dataSetPoints
 global smallds
-smallds = datap[:100]
+smallds = datap[:300]
 dataSetPoints = datap
